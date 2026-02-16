@@ -2,7 +2,7 @@
 
 CamPhish is a powerful penetration testing tool designed to capture camera shots and GPS location from targets via a simple phishing link. It hosts a fake website locally and uses tunneling services like Ngrok or CloudFlare to make it accessible over the internet.
 
-![CamPhish Banner](https://techchip.net/wp-content/uploads/2020/04/camphish.jpg)
+![CamPhish Banner](https://github.com/infowahabwaris/Wahab-osint-T00L)
 
 ## 🚀 Features
 - **Front Camera Capture**: Take stealthy shots from the target's phone or webcam.
@@ -60,5 +60,5 @@ Agar link generate nahi ho raha to yeh karein:
 This tool is created for educational and ethical penetration testing purposes only. Unauthorized use of this tool for illegal activities is strictly prohibited. The developer is not responsible for any misuse.
 
 ---
-**Author**: TechChip | **Modified by**: [Your Nickname]
-**YouTube**: [TechChip Channel](http://youtube.com/techchipnet)
+**Author**: WAHAB | **Modified by**: [ WAHAB ]
+**YouTube**: [ Hack samrt ai ](https://www.youtube.com/@HackSmartAI)
