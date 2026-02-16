@@ -27,7 +27,7 @@ printf "\e[1;92m | |      | (   ) || |   | |\e[0m\e[1;77m| (      | (   ) |   | 
 printf "\e[1;92m | (____/\| )   ( || )   ( |\e[0m\e[1;77m| )      | )   ( |___) (___/\____) || )   ( |\e[0m\n"
 printf "\e[1;92m (_______/|/     \||/     \|\e[0m\e[1;77m|/       |/     \|\_______/\_______)|/     \|\e[0m\n"
 printf " \e[1;93m CamPhish v6.0 [FINAL FIX] \e[0m \n"
-printf " \e[1;77m Zero Race Conditions | 100%% Success Rate \e[0m \n"
+printf " \e[1;77m Developed by Wahab | Zero Race Conditions \e[0m \n"
 }
 
 dependencies() {
