@@ -81,9 +81,35 @@ if [[ ! -f "cloudflared" ]] && [[ ! -f "cloudflared.exe" ]]; then
 fi
 
 printf "\e[1;92m[\e[0m+\e[1;92m] Starting PHP server...\e[0m\n"
+# Kill any existing PHP processes on port 3333
 pkill -f "php -S 127.0.0.1:3333" >/dev/null 2>&1
+fuser -k 3333/tcp >/dev/null 2>&1
+
+# Start PHP server in background
 php -S 127.0.0.1:3333 >/dev/null 2>&1 &
-sleep 2
+PHP_PID=$!
+
+# Wait and verify PHP server started
+sleep 3
+if ! ps -p $PHP_PID > /dev/null 2>&1; then
+    printf "\e[1;31m[!] ERROR: PHP server failed to start.\e[0m\n"
+    printf "\e[1;93m[!] Try: sudo apt install php -y\e[0m\n"
+    stop
+fi
+
+# Verify port is listening
+for i in {1..5}; do
+    if curl -s http://127.0.0.1:3333 >/dev/null 2>&1 || nc -z 127.0.0.1 3333 >/dev/null 2>&1; then
+        printf "\e[1;92m[\e[0m✓\e[1;92m] PHP server is running on port 3333\e[0m\n"
+        break
+    fi
+    sleep 2
+    if [[ $i -eq 5 ]]; then
+        printf "\e[1;31m[!] ERROR: PHP server not responding on port 3333\e[0m\n"
+        printf "\e[1;93m[!] Port may be in use. Try: sudo lsof -i :3333\e[0m\n"
+        stop
+    fi
+done
 
 printf "\e[1;92m[\e[0m+\e[1;92m] Starting Cloudflare tunnel...\e[0m\n"
 if [[ "$windows_mode" == true ]]; then
